@@ -505,9 +505,9 @@ lexer.commenters = [';']
 lexer.quotes = ['"']
 lexer.wordchars += '=()#,.+-<>/'
 
-fp_log = open('fp_log.txt','w')
-const_log = open('const_log.txt','w')
-listing = open('listing.txt','w')
+fp_log = open('log/fp_log.txt','w')
+const_log = open('log/const_log.txt','w')
+listing = open('log/listing.txt','w')
 
 origin = 0
 

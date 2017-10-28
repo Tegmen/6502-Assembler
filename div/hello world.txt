@@ -1,2 +1,0 @@
-Screen = 7800@ 0x8000				;set the programs location in memory to 0x8000	LDX #0x00			;init x to 0==Load==	LDA Text,x			;load text[x] into accumulator (a character)	BEQ InfLoop			;if accumulator == 0 (end of string), jump to infLoop	STA Screen,x		;else store the character in accumulator to screen[x]
-	INX					;x++	JMP Load			;goto load==InfLoop==	JMP InfLoop		;Infinite loop, goto infLoop==Text==	DATA "Hello World!"	
