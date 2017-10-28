@@ -1,0 +1,1 @@
+Screen = 0x7800timer = 0x01@8000start:	LDA #01	STA screenloop:	JMP loopinterrupt:	INC *timer	LDA #0F	CMP *timer	BPL	back	LDA #00	STA *timer	SEC	LDA #03	SBC screen	STA screenback:	RTI	loc FFFA	.word start	.word interrupt	.word interrupt

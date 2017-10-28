@@ -1,0 +1,2 @@
+Bla = 0x0000
+JMP Bla+5
