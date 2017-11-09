@@ -1,5 +1,0 @@
-VAR bla
-VAR foo[2]
-VAR Bar
-
-BRK
