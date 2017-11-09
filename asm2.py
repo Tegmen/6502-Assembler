@@ -10,6 +10,11 @@ LOW = 2
 HIGH = 3
 RELATIVE = 4
 
+TYPE_NDEF = 0
+TYPE_BYTE = 1
+TYPE_WORD = 2
+TYPE_OTHER = 3
+
 TYPES = ['BYTE','WORD','LO','HI','REL']
 
 #ADDRESS MODES
@@ -39,11 +44,11 @@ WP = r'(?:(?:[A-Z][A-Za-z0-9_]*)|(?:0x[0-9a-fA-F]{4})|(?:0b[01]{16})|([0-9]{1,4}
 BP = r'(?:(?:[a-z][A-Za-z0-9_]*)|(?:0x[0-9a-fA-F]{2})|(?:0b[01]{8})|(?:(?:'+WP+r')\.(?:HI|LO))|(?:1?[0-9]?[0-9])|(?:2(?:5[0-5])|(?:[0-4][0-9])))'
 
 COMB_PATTERN = re.compile(r'^\S+[+-]\S+$')
-BYTE_PATTERN = re.compile('^'+BP+'(?:[+-]'+BP+')*$')   
-WORD_PATTERN = re.compile('^'+WP+'(?:[+-]'+WP+')*$')
-BYTE_IDENT_PATTERN = re.compile('^[a-z][A-Za-z0-9_]*$')
-WORD_IDENT_PATTERN = re.compile('^[A-Z][A-Za-z0-9_]*$')
-ARRAY_PATTERN = re.compile(r'^([A-Za-z][A-Za-z0-9_]*)\[('+BP+r')\]$')
+#BYTE_PATTERN = re.compile('^'+BP+'(?:[+-]'+BP+')*$')   
+#WORD_PATTERN = re.compile('^'+WP+'(?:[+-]'+WP+')*$')
+#BYTE_IDENT_PATTERN = re.compile('^[a-z][A-Za-z0-9_]*$')
+#WORD_IDENT_PATTERN = re.compile('^[A-Z][A-Za-z0-9_]*$')
+IDENT_PATTERN = re.compile('^[A-Za-z][A-Za-z0-9_]*$')
 STRING_PATTERN = re.compile(r'^"[\s\S]*"$')
 HEX_PATTERN = re.compile('^0x(?:[0-9A-Fa-f]{2})+$')
 HEXFILE_PATTERN = re.compile(r'^[\w\/]+.hex')
@@ -132,32 +137,6 @@ def handle_label_declaration(label):
 		define_word(label[:-1],current_address)
 	else:
 		define_word(label[2:-2],current_address)
-		
-def handle_var(token):	
-	global current_address
-	if origin == 0:
-		name = next_token()
-		match = ARRAY_PATTERN.match(name)
-		if match:
-			name = match.group(1)
-			length,b = get_int_value(match.group(2))
-		else:
-			length = 1
-		if BYTE_IDENT_PATTERN.match(name):
-			if current_address > 255:
-				error('Byte variables must be at Zero Page: '+current_address)
-			else:
-				define_byte(name,current_address)
-				current_address += length
-			
-		elif WORD_IDENT_PATTERN.match(name):
-			define_word(name,current_address)
-			current_address += length
-		else:
-			error('Identifier expected after VAR, "'+name+'" found')
-	else:
-		error('Variables cant be declared withing code. Must be BEFORE setting origin')
-	
 	
 def handle_byte_identifier(var_name):
 	token = next_token()
@@ -180,38 +159,37 @@ def handle_word_identifier(var_name):
 		error('Word declaration, "=" expected, "'+token+" found")
 
 def handle_data(token):
-	data = re.split(r', (?=(?:"[^"]*?(?: [^"]*)*))|, (?=[^",]+(?:,|$))', next_token())
-	for d in data:
-		if STRING_PATTERN.match(d):
-			content = d[1:-1]
-			c = 0;
-			while c < len(content):
-				if content[c] == '\\':
-					write_byte_fp(int(content[c+1:c+3],16),BYTE)
-					c += 3
-				else:
-					write_byte_fp(ord(content[c]),BYTE)
-					c += 1
-		if HEXFILE_PATTERN.match(d):
-			try:
-				file = open(path+d, 'r').read()
-				for b in range(0,len(file),2):
-					write_byte_fp(int(file[b:b+2],16),BYTE)		
-			except IOError:
-				error('IO error for file '+path+d)
-		
-		elif HEX_PATTERN.match(d):
-			c = 2
-			while c < len(d):
-				write_byte_fp(int(d[c:c+2],16),BYTE)
-				c += 2
-		elif WORD_PATTERN.match(d):
-			write_byte_fp(d,LOW)
-			write_byte_fp(d,HIGH)
-		elif BYTE_PATTERN.match(d):
-			write_byte_fp(d,BYTE)
-		else:
-			error('Unknown data: '+d)
+	data = next_token()
+	if STRING_PATTERN.match(data):
+		content = data[1:-1]
+		c = 0;
+		while c < len(content):
+			if content[c] == '\\':
+				write_byte_fp(int(content[c+1:c+3],16),BYTE)
+				c += 3
+			else:
+				write_byte_fp(ord(content[c]),BYTE)
+				c += 1
+	if HEXFILE_PATTERN.match(data):
+		try:
+			file = open(path+data, 'r').read()
+			for b in range(0,len(file),2):
+				write_byte_fp(int(file[b:b+2],16),BYTE)		
+		except IOError:
+			error('IO error for file '+data)
+	
+	elif HEX_PATTERN.match(data):
+		c = 2
+		while c < len(data):
+			write_byte_fp(int(data[c:c+2],16),BYTE)
+			c += 2
+	elif WORD_PATTERN.match(data):
+		write_byte_fp(data,LOW)
+		write_byte_fp(data,HIGH)
+	elif BYTE_PATTERN.match(data):
+		write_byte_fp(data,BYTE)
+	else:
+		error('Unknown data: '+data)
 		
 def handle_bracket_open(token):
 	brackets.append(Bracket(brackets[-1], current_address))
@@ -229,8 +207,8 @@ def handle_memory_location(token):
 			write_byte_fp(0,BYTE)
 	else:
 		address,isByte = get_int_value(location)
-		#if isByte:
-		#	error("Invalid location "+location)
+		if isByte:
+			error("Invalid location "+location)
 		if address >= current_address:
 			while (address > current_address):
 				write_byte_fp(0,BYTE)
@@ -245,7 +223,7 @@ def handle_origin(token):
 	address,isByte = get_int_value(location)
 	if isByte:
 		error('Invalid location for origin: '+location)
-	elif current_address <= address and origin == 0:
+	elif current_address == 0:
 		current_address = address
 		origin = address
 	else:
@@ -254,9 +232,17 @@ def handle_origin(token):
 def handle_opc(opc):
 	opc_modes = OPC_TABLE.get(opc)
 	if opc_modes == None:
-		error("Unknown Opcode")
+		error("Unknown Opcode: "+opc)
 	if opc_modes[IMP] != -1:
 		write_byte_fp(opc_modes[IMP],BYTE)
+	elif opc_modes[REL] != -1:
+		bla
+	else:
+		addr = next_token()
+		for mode in range(ACC,REL):
+		if opc_modes[mode] != -1:
+			if 
+	
 	else:
 		addr = next_token()
 		match = None
@@ -284,7 +270,6 @@ def handle_opc(opc):
 			error("Invalid addres mode "+addr+" for "+opc)
 	
 TOKEN_HANDLERS = [
-	(re.compile(r'^VAR$'),handle_var),
 	(re.compile(r'^DATA$'),handle_data),
 	(re.compile(r'^ORIGIN$'),handle_origin),
 	(re.compile(r'^==[A-Z][A-Za-z0-9_]*==$'),handle_label_declaration),
@@ -383,43 +368,70 @@ def write_byte_sp(value):
 	else:
 		error_internal("!!!Value out of range: "+str(value)+'    '+str(current_address))
 	
-def get_int_value(token):
+def get_value(token):
 	if COMB_PATTERN.match(token):
 		subtokens = re.split('([+-])',token)
-		value,is_byte = get_int_value(subtokens[0])
+		value = get_value(subtokens[0])
 		s = 2
 		while s < len(subtokens):
-			v,b = get_int_value(subtokens[s])
-			if subtokens[s-1] == '+':
-				value += v
-			elif subtokens[s-1] == '-':
-				value -= v
-			else:
-				error('Syntax error')
-			is_byte = is_byte and b
+			v = get_value(subtokens[s])
+			if subtokens[s-1] == '+': value += v
+			elif subtokens[s-1] == '-': value -= v
+			else: error('Syntax error')
 			s += 2
 		return (value,is_byte and value >= 0 and value <= 255) 	
-	elif HEX_PATTERN.match(token) and len(token) <= 6:
-		return (int(token,16), len(token)==4)
-	elif BIN_PATTERN.match(token) and len(token) <=18:
-		return (int(token,2), len(token)==10)
-	elif DEC_PATTERN.match(token) and int(token) <= 65536:
-		return (int(token), int(token) <= 255)
-	elif BYTE_IDENT_PATTERN.match(token) or WORD_IDENT_PATTERN.match(token):
+	elif HEX_PATTERN.match(token): return int(token,16)
+	elif BIN_PATTERN.match(token): return int(token,2)
+	elif DEC_PATTERN.match(token): return int(token)
+	elif IDENT_PATTERN.match(token):
 		if token in constants:
-			return (constants[token].value, constants[token].type == BYTE)
+			return constants[token].value
 		else:
-			error('Constant "'+token+'" not defined')
+			return -1
 	elif HI_PATTERN.match(token):
-		val = get_int_value(token[:-3])[0]
-		return val//256, True
+		val = get_value(token[:-3])[0]
+		return val//256
 	elif LO_PATTERN.match(token):
-		val = get_int_value(token[:-3])[0]
-		return val%256, True
+		val = get_value(token[:-3])[0]
+		return val%256
 	else:
 		error_internal('cant get int value of "'+token+'"')
 
-	
+def get_type(token):
+	if COMB_PATTERN.match(token):
+		subtokens = re.split('([+-])',token)
+		type = TYPE_BYTE
+		s = 0
+		while s < len(subtokens):
+			t = get_type(subtoken[s])
+			if t == TYPE_OTHER: return TYPE_OTHER
+			elif t == TYPE_WORD: type = TYPE_WORD
+			s += 2
+		return type	
+	elif HEX_PATTERN.match(token):
+		if len(token)==4: return TYPE_BYTE
+		elif len(token)==6: return TYPE_WORD
+		else: return TYPE_OTHER
+	elif BIN_PATTERN.match(token):
+		if len(token)==10: return TYPE_BYTE
+		elif len(token)==18: return TYPE_WORD
+		else: return TYPE_OTHER
+	elif DEC_PATTERN.match(token):
+		if token <= 255: return TYPE_BYTE
+		elif token <= 65535: return TYPE_WORD
+		else: return TYPE_OTHER
+	elif IDENT_PATTERN.match(token):
+		if token in constants:
+			constants[token].type
+		else:
+			return TYPE_NDEF
+	elif HI_PATTERN.match(token) or LO_PATTERN.match(token):
+		return TYPE_BYTE
+	else:
+		error_internal('cant get int value of "'+token+'"')
+
+
+		
 #Used to fixe shlex's broken lineno
 def next_token():
 	global current_line
@@ -514,28 +526,29 @@ if path:
 	path = path.group(0)
 else:
 	path = ''
-
-	
-	
+		
 source = open(sys.argv[1], 'r').read()
+
+
+sourceFixed = re.sub(r'\r?\n',' ;\r\n', source)			#end each line with ' ;' to fix shlex.lineno bug
 sourceList = source.replace('\r', '').split('\n')
-sourceFixed = re.sub(r'\r?\n','; \r\n ', source)			#end each line with ' ;' to fix shlex.lineno bug
 lexer = shlex.shlex(sourceFixed)
 lexer.commenters = [';']
 lexer.quotes = ['"']
-lexer.wordchars += r'=()#,.+-<>/[]:'
+lexer.wordchars += '=()#,.+-<>/'
 
 fp_log = open('log/fp_log.txt','w')
 const_log = open('log/const_log.txt','w')
 listing = open('log/listing.txt','w')
 
 origin = 0
-current_address = 0
+var_pos = 0
 current_line = 0
 
 brackets = [Bracket(None,0)]
 memory_fp = []
 memory_sp = []
+current_address = 0
 constants = {}
 
 
@@ -552,6 +565,6 @@ if len(sys.argv) == 2:
 	print('Done. Copied to clipboard.')
 elif len(sys.argv) == 3:
 	file_name = sys.argv[2]
-	if re.match(r'[\w\/]+.(hex)|(txt)'):
-		file = open(filename,'w')
-		file.write(hex)
+	if re.match(r'[\w\/]+.(hex)|(txt)):
+	file = open(filename,'w')
+	file.write(hex)

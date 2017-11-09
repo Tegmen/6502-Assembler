@@ -9,31 +9,34 @@ tail_gfx = 		8
 apple_gfx = 	12
 start_dir = 	right
 
-key_up = 		1
-key_right = 	2
-key_down = 		4
-key_left = 		8
+key_up = 		8
+key_right = 	4
+key_down = 		2
+key_left = 		1
 
 
-;Addresses
-VAR wait
-VAR move_dir
-VAR move_pos[2]
-VAR move_x
-VAR move_y
-VAR head_dir
-VAR head_pos[2]
-VAR h_dir_old
-VAR tail_dir
-VAR tail_pos[2]
-VAR apple_pos[2]
-VAR has_eaten
+VARLOC 0x00
+:move_dir = 	0x00
+:move_pos = 	0x01
+; hi		0x02
+:move_x = 	0x03
+:move_y = 	0x04
+:head_dir = 	0x05
+:head_pos =	0x06
+; hi		0x07
+h_dir_old = 0x08
+tail_dir = 	0x09
+tail_pos = 	0x0A
+; hi		0x0B
+apple_pos = 0x0C
+; hi		0x0D
+has_eaten = 0x0E
 
 Start_pos = 0x7A0F
 
 Char = 		0x7000
 Screen = 	0x7800
-Keys = 		0x7D01
+Keys = 		0x7C00
 Rand = 		0x7E00
 
 
@@ -65,8 +68,6 @@ STA Start_pos-4
 LDA #0x08
 STA (tail_pos),y
 JSR New_apple
-LDA #2
-STA wait
 CLI
 JMP InfLoop
 
@@ -174,17 +175,12 @@ RTS
 
 
 ==Frame==
-DEC wait
-BNE SK
-{
-	LDA head_dir
-	STA h_dir_old 
-	JSR Key_check
-	JSR Head_move
-	JSR Tail_move
-	LDA #2
-	STA wait
-}
+LDA head_dir
+STA h_dir_old 
+JSR Key_check
+JSR Head_move
+JSR Tail_move
+
 RTI
 
 ==Key_check==

@@ -9,331 +9,336 @@
                |apple_gfx = 	12
                |start_dir = 	right
                |
-               |key_up = 		8
-               |key_right = 	4
-               |key_down = 		2
-               |key_left = 		1
+               |key_up = 		1
+               |key_right = 	2
+               |key_down = 		4
+               |key_left = 		8
                |
                |
                |;Addresses
-               |move_dir = 	0x00
-               |move_pos = 	0x01
-               |; hi		0x02
-               |move_x = 	0x03
-               |move_y = 	0x04
-               |head_dir = 	0x05
-               |head_pos =	0x06
-               |; hi		0x07
-               |h_dir_old = 0x08
-               |tail_dir = 	0x09
-               |tail_pos = 	0x0A
-               |; hi		0x0B
-               |apple_pos = 0x0C
-               |; hi		0x0D
-               |has_eaten = 0x0E
+               |VAR wait
+               |VAR move_dir
+               |VAR move_pos[2]
+               |VAR move_x
+               |VAR move_y
+               |VAR head_dir
+               |VAR head_pos[2]
+               |VAR h_dir_old
+               |VAR tail_dir
+               |VAR tail_pos[2]
+               |VAR apple_pos[2]
+               |VAR has_eaten
                |
                |Start_pos = 0x7A0F
                |
                |Char = 		0x7000
                |Screen = 	0x7800
-               |Keys = 		0x7C00
+               |Keys = 		0x7D01
                |Rand = 		0x7E00
                |
                |
                |ORIGIN = 	0x8000
                |
                |==Init==
-8000: 78       |SEI
-8001: 20 37 80 |JSR Copy_chars
-8004: A9 01    |LDA #start_dir
-8006: 85 05    |STA head_dir
-8008: 85 09    |STA tail_dir
-800A: A9 0F    |LDA #Start_pos.LO
-800C: 85 06    |STA head_pos
-800E: A9 7A    |LDA #Start_pos.HI
-8010: 85 07    |STA head_pos+1
-8012: A9 0A    |LDA #Start_pos.LO-5
-8014: 85 0A    |STA tail_pos
-8016: A9 7A    |LDA #Start_pos.HI
-8018: 85 0B    |STA tail_pos+1
+               |SEI
+8000: 78       |JSR Copy_chars
+8001: 20 3B 80 |LDA #start_dir
+8004: A9 01    |STA head_dir
+8006: 85 06    |STA tail_dir
+8008: 85 0A    |LDA #Start_pos.LO
+800A: A9 0F    |STA head_pos
+800C: 85 07    |LDA #Start_pos.HI
+800E: A9 7A    |STA head_pos+1
+8010: 85 08    |LDA #Start_pos.LO-5
+8012: A9 0A    |STA tail_pos
+8014: 85 0B    |LDA #Start_pos.HI
+8016: A9 7A    |STA tail_pos+1
+8018: 85 0C    |
                |
-               |
-801A: A9 05    |LDA #0x05
-801C: 91 06    |STA (head_pos),y
-801E: A9 15    |LDA #0x15
-8020: 8D 0E 7A |STA Start_pos-1
-8023: 8D 0D 7A |STA Start_pos-2
-8026: 8D 0C 7A |STA Start_pos-3
-8029: 8D 0B 7A |STA Start_pos-4
-802C: A9 08    |LDA #0x08
-802E: 91 0A    |STA (tail_pos),y
-8030: 20 8F 81 |JSR New_apple
-8033: 58       |CLI
-8034: 4C 47 80 |JMP InfLoop
-               |
+               |LDA #0x05
+801A: A9 05    |STA (head_pos),y
+801C: 91 07    |LDA #0x15
+801E: A9 15    |STA Start_pos-1
+8020: 8D 0E 7A |STA Start_pos-2
+8023: 8D 0D 7A |STA Start_pos-3
+8026: 8D 0C 7A |STA Start_pos-4
+8029: 8D 0B 7A |LDA #0x08
+802C: A9 08    |STA (tail_pos),y
+802E: 91 0B    |JSR New_apple
+8030: 20 9B 81 |LDA #2
+8033: A9 02    |STA wait
+8035: 85 00    |CLI
+8037: 58       |JMP InfLoop
+8038: 4C 4B 80 |
                |
                |
                |==Copy_chars==	;Copies the 32 characters into Character Memory
-8037: A2 00    |LDX #0x00
-               |{
-8039: BD 00 82 |	LDA Gfx,x
-803C: 9D 00 70 |	STA Char,x
-803F: E8       |	INX
-8040: F0 03    |	BEQ BR
-8042: 4C 39 80 |	JMP RE
-               |}
-8045: 60       |RTS
-               |
+               |LDX #0x00
+803B: A2 00    |{
+               |	LDA Gfx,x
+803D: BD 00 82 |	STA Char,x
+8040: 9D 00 70 |	INX
+8043: E8       |	BEQ BR
+8044: F0 03    |	JMP RE
+8046: 4C 3D 80 |}
+               |RTS
+8049: 60       |
                |==Game_over==
-8046: 78       |SEI
-               |
+               |SEI
+804A: 78       |
                |==InfLoop==
-8047: 4C 47 80 |JMP InfLoop
-               |
+               |JMP InfLoop
+804B: 4C 4B 80 |
                |
                |==Move==
-804A: A5 00    |LDA move_dir
-804C: 29 02    |AND #up_or_down
-804E: F0 50    |BEQ SK
-               |;Move Vertical
+               |LDA move_dir
+804E: A5 01    |AND #up_or_down
+8050: 29 02    |BEQ SK
+8052: F0 50    |;Move Vertical
                |{
-8050: A5 01    |	LDA move_pos
-8052: 29 E0    |	AND #0b11100000
-8054: 85 04    |	STA move_y
-8056: A5 01    |	LDA move_pos
-8058: 29 1F    |	AND #0b00011111
-805A: 85 03    |	STA move_x
-805C: A5 00    |	LDA move_dir
-805E: C9 03    |	CMP #up
-8060: F0 1E    |	BEQ SK
-               |	;Move down
+               |	LDA move_pos
+8054: A5 02    |	AND #0b11100000
+8056: 29 E0    |	STA move_y
+8058: 85 05    |	LDA move_pos
+805A: A5 02    |	AND #0b00011111
+805C: 29 1F    |	STA move_x
+805E: 85 04    |	LDA move_dir
+8060: A5 01    |	CMP #up
+8062: C9 03    |	BEQ SK
+8064: F0 1E    |	;Move down
                |	{
-8062: A5 04    |		LDA move_y
-8064: 18       |		CLC
-8065: 69 20    |		ADC #0b00100000
-8067: 05 03    |		ORA move_x
-8069: 85 01    |		STA move_pos
-806B: A5 02    |		LDA move_pos+1
-806D: 29 FC    |		AND #0b11111100
-806F: 85 04    |		STA move_y
-8071: A5 02    |		LDA move_pos+1
-8073: 29 03    |		AND #0b00000011
-8075: 69 00    |		ADC #0
-8077: 29 03    |		AND #0b00000011
-8079: 05 04    |		ORA move_y
-807B: 85 02    |		STA move_pos+1
-807D: 4C 9D 80 |		JMP BR,SK
-               |	}
+               |		LDA move_y
+8066: A5 05    |		CLC
+8068: 18       |		ADC #0b00100000
+8069: 69 20    |		ORA move_x
+806B: 05 04    |		STA move_pos
+806D: 85 02    |		LDA move_pos+1
+806F: A5 03    |		AND #0b11111100
+8071: 29 FC    |		STA move_y
+8073: 85 05    |		LDA move_pos+1
+8075: A5 03    |		AND #0b00000011
+8077: 29 03    |		ADC #0
+8079: 69 00    |		AND #0b00000011
+807B: 29 03    |		ORA move_y
+807D: 05 05    |		STA move_pos+1
+807F: 85 03    |		JMP BR,SK
+8081: 4C A1 80 |	}
                |	;Move up
                |	{
-8080: A5 04    |		LDA move_y
-8082: 38       |		SEC
-8083: E9 20    |		SBC #0b00100000
-8085: 29 E0    |		AND #0b11100000
-8087: 05 03    |		ORA move_x
-8089: 85 01    |		STA move_pos
-808B: A5 02    |		LDA move_pos+1
-808D: 29 FC    |		AND #0b11111100
-808F: 85 04    |		STA move_y
-8091: A5 02    |		LDA move_pos+1
-8093: 29 03    |		AND #0b00000011
-8095: E9 00    |		SBC #0
-8097: 29 03    |		AND #0b00000011
-8099: 05 04    |		ORA move_y
-809B: 85 02    |		STA move_pos+1	
+               |		LDA move_y
+8084: A5 05    |		SEC
+8086: 38       |		SBC #0b00100000
+8087: E9 20    |		AND #0b11100000
+8089: 29 E0    |		ORA move_x
+808B: 05 04    |		STA move_pos
+808D: 85 02    |		LDA move_pos+1
+808F: A5 03    |		AND #0b11111100
+8091: 29 FC    |		STA move_y
+8093: 85 05    |		LDA move_pos+1
+8095: A5 03    |		AND #0b00000011
+8097: 29 03    |		SBC #0
+8099: E9 00    |		AND #0b00000011
+809B: 29 03    |		ORA move_y
+809D: 05 05 .. |		STA move_pos+1	
                |	}
-809D: 4C C1 80 |	JMP BR,SK
-               |}
+               |	JMP BR,SK
+80A1: 4C C5 80 |}
                |;Move Horizontal
                |{
-80A0: A5 01    |	LDA move_pos
-80A2: 09 E0    |	ORA #0b11100000
-80A4: 85 03    |	STA move_x
-80A6: A5 01    |	LDA move_pos
-80A8: 29 E0    |	AND #0b11100000
-80AA: 85 01    |	STA move_pos
-80AC: A5 00    |	LDA move_dir
-80AE: C9 00    |	CMP #left
-80B0: F0 05    |	BEQ SK
-               |	;Move right
+               |	LDA move_pos
+80A4: A5 02    |	ORA #0b11100000
+80A6: 09 E0    |	STA move_x
+80A8: 85 04    |	LDA move_pos
+80AA: A5 02    |	AND #0b11100000
+80AC: 29 E0    |	STA move_pos
+80AE: 85 02    |	LDA move_dir
+80B0: A5 01    |	CMP #left
+80B2: C9 00    |	BEQ SK
+80B4: F0 05    |	;Move right
                |	{
-80B2: E6 03    |		INC move_x
-80B4: 4C B9 80 |		JMP BR,SK
-               |	}
+               |		INC move_x
+80B6: E6 04    |		JMP BR,SK
+80B8: 4C BD 80 |	}
                |	;Move left
                |	{
-80B7: C6 03    |		DEC move_x
-               |	}
-80B9: A5 03    |	LDA move_x
-80BB: 29 1F    |	AND #0b00011111
-80BD: 05 01    |	ORA move_pos
-80BF: 85 01    |	STA move_pos
-               |}
-80C1: 60       |RTS
-               |
+               |		DEC move_x
+80BB: C6 04    |	}
+               |	LDA move_x
+80BD: A5 04    |	AND #0b00011111
+80BF: 29 1F    |	ORA move_pos
+80C1: 05 02    |	STA move_pos
+80C3: 85 02    |}
+               |RTS
+80C5: 60       |
                |
                |
                |
                |==Frame==
-80C2: A5 05    |LDA head_dir
-80C4: 85 08    |STA h_dir_old 
-80C6: 20 D0 80 |JSR Key_check
-80C9: 20 0C 81 |JSR Head_move
-80CC: 20 4E 81 |JSR Tail_move
-               |
-80CF: 40       |RTI
-               |
+               |DEC wait
+80C6: C6 00    |BNE SK
+80C8: D0 11    |{
+               |	LDA head_dir
+80CA: A5 06 .. |	STA h_dir_old 
+               |	JSR Key_check
+80CE: 20 DC 80 |	JSR Head_move
+80D1: 20 18 81 |	JSR Tail_move
+80D4: 20 5A 81 |	LDA #2
+80D7: A9 02    |	STA wait
+80D9: 85 00    |}
+               |RTI
+80DB: 40       |
                |==Key_check==
-80D0: A5 05    |LDA head_dir
-80D2: 29 02    |AND #up_or_down
-80D4: F0 1C    |BEQ SK
-               |;Up/Down
+               |LDA head_dir
+80DC: A5 06    |AND #up_or_down
+80DE: 29 02    |BEQ SK
+80E0: F0 1C    |;Up/Down
                |{
-80D6: AD 00 7C |	LDA Keys
-80D9: 29 01    |	AND #key_left
-80DB: F0 07    |	BEQ SK
-               |	{
-80DD: A9 00    |		LDA #left
-80DF: 85 05    |		STA head_dir
-80E1: 4C EF 80 |		JMP BR,SK
-               |	}
-80E4: AD 00 7C |	LDA Keys
-80E7: 29 04    |	AND #key_right
-80E9: F0 20    |	BEQ BR,SK
-               |	{
-80EB: A9 01    |		LDA #right
-80ED: 85 05    |		STA head_dir
-               |	}
-80EF: 4C 0B 81 |	JMP BR,SK
-               |}
+               |	LDA Keys
+80E2: AD 01 7D |	AND #key_left
+80E5: 29 08    |	BEQ SK
+80E7: F0 07    |	{
+               |		LDA #left
+80E9: A9 00    |		STA head_dir
+80EB: 85 06    |		JMP BR,SK
+80ED: 4C FB 80 |	}
+               |	LDA Keys
+80F0: AD 01 7D |	AND #key_right
+80F3: 29 02    |	BEQ BR,SK
+80F5: F0 20    |	{
+               |		LDA #right
+80F7: A9 01    |		STA head_dir
+80F9: 85 06    |	}
+               |	JMP BR,SK
+80FB: 4C 17 81 |}
                |{
-80F2: AD 00 7C |	LDA Keys
-80F5: 29 02    |	AND #key_down
-80F7: F0 07    |	BEQ SK
-               |	{
-80F9: A9 02    |		LDA #down
-80FB: 85 05    |		STA head_dir
-80FD: 4C 0B 81 |		JMP BR,SK
-               |	}
-8100: AD 00 7C |	LDA Keys
-8103: 29 08    |	AND #key_up
-8105: F0 04    |	BEQ BR
-               |	{
-8107: A9 03    |		LDA #up
-8109: 85 05    |		STA head_dir
-               |	}
+               |	LDA Keys
+80FE: AD 01 7D |	AND #key_down
+8101: 29 04    |	BEQ SK
+8103: F0 07    |	{
+               |		LDA #down
+8105: A9 02    |		STA head_dir
+8107: 85 06    |		JMP BR,SK
+8109: 4C 17 81 |	}
+               |	LDA Keys
+810C: AD 01 7D |	AND #key_up
+810F: 29 01    |	BEQ BR
+8111: F0 04    |	{
+               |		LDA #up
+8113: A9 03    |		STA head_dir
+8115: 85 06    |	}
                |}
-810B: 60       |RTS
-               |
+               |RTS
+8117: 60       |
                |==Head_move==
-810C: A5 08    |LDA h_dir_old
-810E: 18       |CLC
-810F: 2A       |ROL A
-8110: 2A       |ROL A
-8111: 09 10    |ORA #0x10
-8113: 05 05    |ORA head_dir
-8115: 91 06    |STA (head_pos),y
-8117: A5 06    |LDA head_pos
-8119: 85 01    |STA move_pos
-811B: A5 07    |LDA head_pos+1
-811D: 85 02    |STA move_pos+1
-811F: A5 05    |LDA head_dir
-8121: 85 00    |STA move_dir
-8123: 20 4A 80 |JSR Move
-8126: A5 01    |LDA move_pos
-8128: 85 06    |STA head_pos
-812A: A5 02    |LDA move_pos+1
-812C: 85 07    |STA head_pos+1
-812E: B1 06    |LDA (head_pos),y
-8130: 29 FC    |AND #0b11111100
-8132: C9 0C    |CMP #apple_gfx
-8134: D0 0A    |BNE SK
-               |;Eat apple
+               |LDA h_dir_old
+8118: A5 09    |CLC
+811A: 18       |ROL A
+811B: 2A       |ROL A
+811C: 2A       |ORA #0x10
+811D: 09 10    |ORA head_dir
+811F: 05 06    |STA (head_pos),y
+8121: 91 07    |LDA head_pos
+8123: A5 07    |STA move_pos
+8125: 85 02    |LDA head_pos+1
+8127: A5 08    |STA move_pos+1
+8129: 85 03    |LDA head_dir
+812B: A5 06    |STA move_dir
+812D: 85 01    |JSR Move
+812F: 20 4E 80 |LDA move_pos
+8132: A5 02    |STA head_pos
+8134: 85 07    |LDA move_pos+1
+8136: A5 03    |STA head_pos+1
+8138: 85 08    |LDA (head_pos),y
+813A: B1 07    |AND #0b11111100
+813C: 29 FC    |CMP #apple_gfx
+813E: C9 0C    |BNE SK
+8140: D0 0A    |;Eat apple
                |{
-8136: A9 04    |	LDA #0x04
-8138: 85 0E    |	STA has_eaten
-813A: 20 8F 81 |	JSR New_apple
-813D: 4C 47 81 |	JMP BR,SK
-               |}
-8140: C9 00    |CMP #0x00
-8142: F0 03    |BEQ SK
-               |; Collision
+               |	LDA #0x04
+8142: A9 04    |	STA has_eaten
+8144: 85 0F    |	JSR New_apple
+8146: 20 9B 81 |	JMP BR,SK
+8149: 4C 53 81 |}
+               |CMP #0x00
+814C: C9 00    |BEQ SK
+814E: F0 03    |; Collision
                |{
-8144: 4C 46 80 |	JMP Game_over
-               |}
-8147: A9 04    |LDA #head_gfx
-8149: 05 05    |ORA head_dir
-814B: 91 06    |STA (head_pos),y
-814D: 60       |RTS
-               |
+               |	JMP Game_over
+8150: 4C 4A 80 |}
+               |LDA #head_gfx
+8153: A9 04    |ORA head_dir
+8155: 05 06    |STA (head_pos),y
+8157: 91 07    |RTS
+8159: 60       |
                |==Tail_move==
-814E: A5 0E    |LDA has_eaten
-               |
-8150: F0 05    |BEQ SK
-               |;has eaten
+               |LDA has_eaten
+815A: A5 0F    |
+               |BEQ SK
+815C: F0 05    |;has eaten
                |{
-8152: C6 0E    |	DEC has_eaten
-8154: 4C 8E 81 |	JMP BR,SK
-               |}
+               |	DEC has_eaten
+815E: C6 0F    |	JMP BR,SK
+8160: 4C 9A 81 |}
                |; Not eaten, move tail
                |{
-8157: B1 0A    |	LDA (tail_pos),y
-8159: 29 FC    |	AND #0b11111100
-815B: C9 0C    |	CMP #apple_gfx
-815D: F0 04    |	BEQ SK
-               |	{
-815F: A9 00    |		LDA #0x00
-8161: 91 0A    |		STA (tail_pos),y
-               |	}
-8163: A5 09    |	LDA tail_dir
-8165: 85 00    |	STA move_dir
-8167: A5 0A    |	LDA tail_pos
-8169: 85 01    |	STA move_pos
-816B: A5 0B    |	LDA tail_pos+1
-816D: 85 02    |	STA move_pos+1
-816F: 20 4A 80 |	JSR Move
-8172: A5 01    |	LDA move_pos
-8174: 85 0A    |	STA tail_pos
-8176: A5 02    |	LDA move_pos+1
-8178: 85 0B    |	STA tail_pos+1
-817A: B1 0A    |	LDA (tail_pos),y
-817C: 29 03    |	AND #0b00000011
-817E: 85 09    |	STA tail_dir
-8180: B1 0A    |	LDA (tail_pos),y
-8182: 29 FC    |	AND #0b11111100
-8184: C9 0C    |	CMP #apple_gfx
-8186: F0 06    |	BEQ SK
-               |	{
-8188: A5 09    |		LDA tail_dir
-818A: 09 08    |		ORA #tail_gfx
-818C: 91 0A    |		STA (tail_pos),y
-               |	}
+               |	LDA (tail_pos),y
+8163: B1 0B    |	AND #0b11111100
+8165: 29 FC    |	CMP #apple_gfx
+8167: C9 0C    |	BEQ SK
+8169: F0 04    |	{
+               |		LDA #0x00
+816B: A9 00    |		STA (tail_pos),y
+816D: 91 0B    |	}
+               |	LDA tail_dir
+816F: A5 0A    |	STA move_dir
+8171: 85 01    |	LDA tail_pos
+8173: A5 0B    |	STA move_pos
+8175: 85 02    |	LDA tail_pos+1
+8177: A5 0C    |	STA move_pos+1
+8179: 85 03    |	JSR Move
+817B: 20 4E 80 |	LDA move_pos
+817E: A5 02    |	STA tail_pos
+8180: 85 0B    |	LDA move_pos+1
+8182: A5 03    |	STA tail_pos+1
+8184: 85 0C    |	LDA (tail_pos),y
+8186: B1 0B    |	AND #0b00000011
+8188: 29 03    |	STA tail_dir
+818A: 85 0A    |	LDA (tail_pos),y
+818C: B1 0B    |	AND #0b11111100
+818E: 29 FC    |	CMP #apple_gfx
+8190: C9 0C    |	BEQ SK
+8192: F0 06    |	{
+               |		LDA tail_dir
+8194: A5 0A    |		ORA #tail_gfx
+8196: 09 08    |		STA (tail_pos),y
+8198: 91 0B    |	}
                |}
-818E: 60       |RTS
-               |
+               |RTS
+819A: 60       |
                |==New_apple==
-818F: AD 00 7E |LDA Rand
-8192: 85 0C    |STA apple_pos
-8194: AD 00 7E |LDA Rand
-8197: 29 03    |AND #0b00000011
-8199: 09 78    |ORA #Screen.HI
-819B: 85 0D    |STA apple_pos+1
-819D: A9 12    |LDA #0x12
-819F: B1 0C    |LDA (apple_pos),y
-81A1: 29 03    |AND #0b00000011
-81A3: 09 0C    |ORA #apple_gfx
-81A5: 91 0C    |STA (apple_pos),y
-81A7: 60       |RTS
+               |LDA Rand
+819B: AD 00 7E |STA apple_pos
+819E: 85 0D    |LDA Rand
+81A0: AD 00 7E |AND #0b00000011
+81A3: 29 03    |ORA #Screen.HI
+81A5: 09 78    |STA apple_pos+1
+81A7: 85 0E    |LDA #0x12
+81A9: A9 12    |LDA (apple_pos),y
+81AB: B1 0D    |AND #0b00000011
+81AD: 29 03    |ORA #apple_gfx
+81AF: 09 0C    |STA (apple_pos),y
+81B1: 91 0D    |RTS
+81B3: 60       |
                |
-               |
-81A8: 00 00 .. |@NPAGE
-               |==Gfx==
-8200: 00 00 .. |DATA gfx.hex
-               |
+               |@NPAGE
+81B4: 00 00 .. |==Gfx==
+               |DATA gfx.hex
+8200: 00 01 .. |
                |==Nmi==
-8300: 40       |RTI
-               |
-8301: 00 00 .. |@0xFFFA
-FFFA: 00 83    |DATA Nmi
-FFFC: 00 80    |DATA Init
-FFFE: C2 80    |DATA Frame
+               |RTI
+8300: 40       |
+               |@0xFFFA
+8301: 00 00 .. |DATA Nmi
+FFFA: 00 83    |DATA Init
+FFFC: 00 80    |DATA Frame
+FFFE: C6 80    |
