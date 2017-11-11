@@ -2,7 +2,7 @@
 This is an Assembler for the MOS 6502.
 To assemble a file, run `Python asm.py <source-file> <target-file>`, for example `Python asm.py Kwirk/Kwirk.asm Kwirk/Kwirk.hex`
 * If `<target-file>` is ending in ".txt" or ".hex", then the file will be assembled into a file consisting only of a hexadecimal string.
-* <del>Otherwise a binary file will be created
+* Otherwise a binary file will be created
 * If `<target-file>` is omitted, the assembled code will be copied to clipboard as a hexadecimal string.
 
 ASM-Syntax
