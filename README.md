@@ -8,7 +8,7 @@ To assemble a file, run `Python asm.py <source-file> <target-file>`, for example
 ASM-Syntax
 ==========
 
-Adressing-Modes
+Addressing-Modes
 ---------------
 * Imlicit: `OPC` e.g. `RTS`
 * Accumulator: `OPC A` e.g. `ROR A` (Operations on Accumulator are explicit)
@@ -34,7 +34,7 @@ Constants
 * Identifiers of Word constants must start with a **uppercase** letter and are followed by alphanumeric characters or underscores.  
   `Character_rom = 0x8000`
   
-* Adresses for variables can also be defined as follows:
+* Addresses for variables can also be defined as follows:
 
       @0x00       ;Adresses start from 0x00
       VAR foo     ;foo is set to 0x00
