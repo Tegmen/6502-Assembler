@@ -126,12 +126,30 @@ OPC_TABLE = {
 	'TXA':[0x8a,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1],
 	'TXS':[0x9a,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1],
 	'TYA':[0x98,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1]}
+	
+JUMPERS = [
+	'ASL',
+	'BCC',
+	'BCS',
+	'BEQ',
+	'BMI',
+	'BNE',
+	'BPL',
+	'BVC',
+	'BVS',
+	'JMP',
+	'RTI',
+	'RTS']
 
 def handle_label_declaration(label):
 	if label[-1] == ':':
 		define_word(label[:-1],current_address)
+		
 	else:
-		define_word(label[2:-2],current_address)
+		if last_opc in JUMPERS:
+			define_word(label[2:-2],current_address)
+		else:
+			error('Label =='+label[2:-2]+'== reachable from last OPC: '+last_opc)
 		
 def handle_var(token):	
 	global current_address
@@ -252,9 +270,11 @@ def handle_origin(token):
 		error('ORIGIN must be set before the first OPC/ DATA')
 	
 def handle_opc(opc):
+	global last_opc
 	opc_modes = OPC_TABLE.get(opc)
 	if opc_modes == None:
 		error("Unknown Opcode")
+	last_opc = opc
 	if opc_modes[IMP] != -1:
 		write_byte_fp(opc_modes[IMP],BYTE)
 	else:
@@ -436,8 +456,8 @@ def memory_as_hex():
 def first_pass():
 	token = next_token()
 	while token != lexer.eof:
-		if OPC_TABLE.get(token) != None:
-			handle_opc(token)
+		if OPC_TABLE.get(token.upper()) != None:
+			handle_opc(token.upper())
 		else:
 			token_handled = False
 			for pattern,handle in TOKEN_HANDLERS:
@@ -520,6 +540,7 @@ else:
 source = open(sys.argv[1], 'r').read()
 sourceList = source.replace('\r', '').split('\n')
 sourceFixed = re.sub(r'\r?\n','; \r\n ', source)			#end each line with ' ;' to fix shlex.lineno bug
+#sourceFixed = re.sub(r'\r?\n',' \r\n ', source)
 lexer = shlex.shlex(sourceFixed)
 lexer.commenters = [';']
 lexer.quotes = ['"']
@@ -538,6 +559,7 @@ memory_fp = []
 memory_sp = []
 constants = {}
 
+last_opc = 'JMP'
 
 first_pass()
 second_pass()
@@ -552,6 +574,10 @@ if len(sys.argv) == 2:
 	print('Done. Copied to clipboard.')
 elif len(sys.argv) == 3:
 	file_name = sys.argv[2]
-	if re.match(r'[\w\/]+.(hex)|(txt)'):
-		file = open(filename,'w')
+	if re.compile(r'[\w\/]+.(hex)|(txt)').match(file_name):
+		file = open(file_name,'w')
 		file.write(hex)
+	else:
+		b = bytes(memory_sp)
+		with open(file_name, 'bw') as f:
+			f.write(b)
