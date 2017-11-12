@@ -574,7 +574,7 @@ if len(sys.argv) == 2:
 	print('Done. Copied to clipboard.')
 elif len(sys.argv) == 3:
 	file_name = sys.argv[2]
-	if re.compile(r'[\w\/]+.(hex)|(txt)').match(file_name):
+	if re.compile(r'^[\w\/]+\.((hex)|(txt))$').match(file_name):
 		file = open(file_name,'w')
 		file.write(hex)
 	else:
