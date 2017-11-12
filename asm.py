@@ -210,7 +210,7 @@ def handle_data(token):
 				else:
 					write_byte_fp(ord(content[c]),BYTE)
 					c += 1
-		if HEXFILE_PATTERN.match(d):
+		elif HEXFILE_PATTERN.match(d):
 			try:
 				file = open(path+d, 'r').read()
 				for b in range(0,len(file),2):

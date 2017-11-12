@@ -1,1 +1,36 @@
- 01 02 03      |DATA 0x010203
+               |@0x00                   
+               |                            
+               |Screen  = 0x7800            ;Screen is the location of the first character on screen.
+               |
+               |
+               |ORIGIN = 0x8000
+               |
+               |==Start==
+8000: 20 06 80 |JSR Write_hw                ;Jump to the subroutine Write_hw
+               |{
+8003: 4C 03 80 |    JMP RE                  ;This is an infinite loop to trap the program counter. It Jumps back
+               |                            ;to the start of the bracket
+               |}                       
+               |
+               |==Write_hw==
+8006: A2 00    |LDX #0                      ;Set the Register X to 0
+               |{
+8008: BD 15 80 |    LDA My_Text,x           ;Loads the character X of My_Text (see further down) into Accumulator
+800B: F0 07    |    BEQ BR                  ;If its Zero, break/leave the bracket
+800D: 9D 00 78 |    STA Screen,x            ;Else, Store the character in Acc. on Screen + X
+8010: E8       |    INX                     ;X++
+8011: 4C 08 80 |    JMP RE                  ;Jump to the start of the bracket/loop
+               |}               
+8014: 60       |RTS                         ;When done, jump back to where we came from
+               |
+               |==My_Text==                 ;Label, so we can access the next data easily
+8015: 48 65 .. |DATA "Hello World!\00"      ;Puts 13 bytes here (12 ASCII characters + 0x00)
+               |
+               |
+               |
+               |==Irq_handler==
+               |RTI
+8022: 40       |
+               |@0xFFFC
+8023: 00 00 .. |DATA Start
+FFFC: 00 80 .. |DATA Irq_handler
